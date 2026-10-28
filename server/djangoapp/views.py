@@ -1,8 +1,8 @@
 # Uncomment the required imports before adding the code
 
-# from django.shortcuts import render
-# from django.http import HttpResponseRedirect, HttpResponse
-# from django.contrib.auth.models import User
+from django.shortcuts import render
+from django.http import HttpResponseRedirect, HttpResponse
+from django.contrib.auth.models import User
 # from django.shortcuts import get_object_or_404, render, redirect
 # from django.contrib.auth import logout
 # from django.contrib import messages
@@ -42,10 +42,31 @@ def login_user(request):
 # def logout_request(request):
 # ...
 
-# Create a `registration` view to handle sign up request
-# @csrf_exempt
-# def registration(request):
-# ...
+@csrf_exempt
+def registration(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    try:
+        data = json.loads(request.body)
+        username = data.get('userName')
+        first_name = data.get('firstName')
+        last_name = data.get('lastName')
+        email = data.get('email')
+        password = data.get('password')
+        if not username or not password:
+            return JsonResponse({"status": "Failed", "message": "Missing fields"}, status=400)
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({"status": "Failed", "message": "User exists"}, status=400)
+        user = User.objects.create_user(username=username,
+                                      password=password,
+                                      email=email,
+                                      first_name=first_name,
+                                      last_name=last_name)
+        user.save()
+        return JsonResponse({"status": "Registered", "userName": username})
+    except Exception as e:
+        logger.exception("Registration error")
+        return JsonResponse({"status": "Failed", "message": str(e)}, status=500)
 
 # # Update the `get_dealerships` view to render the index page with
 # a list of dealerships
